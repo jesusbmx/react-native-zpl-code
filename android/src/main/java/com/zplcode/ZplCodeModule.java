@@ -1,5 +1,6 @@
 package com.zplcode;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
@@ -41,11 +42,7 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
   ) {
     try {
       // Obtener propiedades de la ReadableMap
-      final Bitmap bitmap = getBitmap(props);
-      if (bitmap == null) {
-        throw new IOException("Image not found");
-      }
-
+      final Bitmap bitmap = getBitmapFromProps(getReactApplicationContext(), props);
       Integer xOffset = props.hasKey("x") ? props.getInt("x") : null;
       Integer yOffset = props.hasKey("y") ? props.getInt("y") : null;
       int width = props.getInt("width");
@@ -95,39 +92,33 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
   }
 
 
-  public static Bitmap getBitmap(ReadableMap props) throws IOException {
+  @NonNull
+  public static Bitmap getBitmapFromProps(Context context, ReadableMap props) throws IOException {
     String uri = props.hasKey("uri") ? props.getString("uri") : null;
     if (uri != null) {
-      return getBitmapFormUri(uri);
+      Bitmap bitmap = getBitmapFormUri(context, uri);
+      if (bitmap == null) {
+        throw new IOException("Image '" + uri + "' not found");
+      }
+      return  bitmap;
     }
 
     String base64 = props.hasKey("base64") ? props.getString("base64") : null;
     if (base64 != null) {
-      return getBitmapFromBase64(base64);
+      Bitmap bitmap = getBitmapFromBase64(base64);
+      if (bitmap == null) {
+        throw new IOException("Could not decode the image");
+      }
+      return  bitmap;
     }
 
     throw new IOException("Image path not specified");
   }
 
-  public static Bitmap getBitmapFormUri(String uri) throws IOException {
+  public static Bitmap getBitmapFormUri(Context context, String uri) throws IOException {
     if (uri.startsWith("https://") || uri.startsWith("http://")) {
       // Si es una URL
-      URL src = new URL(uri);
-      HttpURLConnection connection = null;
-
-      try {
-        connection = (HttpURLConnection) src.openConnection();
-        connection.setDoInput(true);
-        connection.connect();
-
-        try (InputStream input = connection.getInputStream()) {
-          return BitmapFactory.decodeStream(input);
-        }
-
-      } finally {
-        if (connection != null)
-          connection.disconnect();
-      }
+      return getBitmapFormUrl(uri);
     }
 
     // "data:image/jpeg;base64,...............";
@@ -137,8 +128,37 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
       return getBitmapFromBase64(imageDataBytes);
     }
 
+    /*ContentResolver resolver = context.getContentResolver();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      return ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, uri));
+    } else {
+      return MediaStore.Images.Media.getBitmap(resolver, uri);
+    }*/
+
     // Si es una ruta de archivo local
     return BitmapFactory.decodeFile(uri);
+  }
+
+  // Método para obtener un Bitmap de una url
+  public static Bitmap getBitmapFormUrl(String url) throws IOException {
+    // Si es una URL
+    URL src = new URL(url);
+    HttpURLConnection connection = null;
+
+    try {
+      connection = (HttpURLConnection) src.openConnection();
+      connection.setDoInput(true);
+      connection.connect();
+
+      try (InputStream input = connection.getInputStream()) {
+        return BitmapFactory.decodeStream(input);
+      }
+
+    } finally {
+      if (connection != null) {
+        connection.disconnect();
+      }
+    }
   }
 
   // Método para convertir una cadena Base64 a un objeto Bitmap
