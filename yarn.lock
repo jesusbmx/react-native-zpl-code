@@ -8042,12 +8042,20 @@ react-native-builder-bob@^0.20.0:
   optionalDependencies:
     jetifier "^2.0.0"
 
+react-native-document-picker@^9.0.1:
+  version "9.0.1"
+  resolved "https://registry.npmjs.org/react-native-document-picker/-/react-native-document-picker-9.0.1.tgz"
+  integrity sha512-l2c2xChwsdjzZIV9QJc85buC3vXkM5ZuY4943yMDj3TiszJp1spmHNaRMZKYIh3yVwdD2jENm0DBU5AWa+jhLg==
+  dependencies:
+    invariant "^2.2.4"
+
 "react-native-zpl-code-example@file:C:\\GitHub\\react-native-zpl-code\\example":
   version "0.0.1"
   resolved "file:example"
   dependencies:
     react "18.2.0"
     react-native "0.72.6"
+    react-native-document-picker "^9.0.1"
 
 react-native@*, react-native@0.72.6:
   version "0.72.6"
@@ -8104,7 +8112,7 @@ react-shallow-renderer@^16.15.0:
     object-assign "^4.1.1"
     react-is "^16.12.0 || ^17.0.0 || ^18.0.0"
 
-"react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", react@18.2.0:
+react@*, "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", react@18.2.0:
   version "18.2.0"
   resolved "https://registry.npmjs.org/react/-/react-18.2.0.tgz"
   integrity sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==

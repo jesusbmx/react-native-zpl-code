@@ -1,9 +1,15 @@
 package com.zplcode;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageDecoder;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -96,7 +102,7 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
   public static Bitmap getBitmapFromProps(Context context, ReadableMap props) throws IOException {
     String uri = props.hasKey("uri") ? props.getString("uri") : null;
     if (uri != null) {
-      Bitmap bitmap = getBitmapFormUri(context, uri);
+      Bitmap bitmap = getBitmapFromUri(context, uri);
       if (bitmap == null) {
         throw new IOException("Image '" + uri + "' not found");
       }
@@ -115,11 +121,8 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
     throw new IOException("Image path not specified");
   }
 
-  public static Bitmap getBitmapFormUri(Context context, String uri) throws IOException {
-    if (uri.startsWith("https://") || uri.startsWith("http://")) {
-      // Si es una URL
-      return getBitmapFormUrl(uri);
-    }
+  public static Bitmap getBitmapFromUri(Context context, String uri) throws IOException {
+    Log.d("ZplCodeModule", "getBitmapFromUri: " + uri);
 
     // "data:image/jpeg;base64,...............";
     if (uri.startsWith("data:")) {
@@ -128,19 +131,53 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
       return getBitmapFromBase64(imageDataBytes);
     }
 
-    /*ContentResolver resolver = context.getContentResolver();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      return ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, uri));
-    } else {
-      return MediaStore.Images.Media.getBitmap(resolver, uri);
-    }*/
+    // Si es una URL
+    if (uri.startsWith("https://") || uri.startsWith("http://")) {
+      return getBitmapFromUrl(uri);
+    }
+
+    // Si es una ruta de archivo es un contenedor
+    if (uri.startsWith("content://")) {
+      return getBitmapFromHardware(context, Uri.parse(uri));
+    }
 
     // Si es una ruta de archivo local
-    return BitmapFactory.decodeFile(uri);
+    if (uri.startsWith("file://")) {
+      return getBitmapFromHardware(context, Uri.parse(uri));
+    }
+
+    // Si es una ruta de archivo local
+    //return BitmapFactory.decodeFile(uri);
+    return getBitmapFromHardware(context, Uri.parse("file://" + uri));
+  }
+
+  public static Bitmap getBitmapFromHardware(Context context, Uri uri) throws IOException {
+    Log.d("ZplCodeModule", "getBitmapFromHardware: " + uri);
+
+    Bitmap originalBitmap;
+    ContentResolver resolver = context.getContentResolver();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      originalBitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, uri));
+    } else {
+      originalBitmap = MediaStore.Images.Media.getBitmap(resolver, uri);
+    }
+
+    // Verifica si el Bitmap es mutable
+    if (!originalBitmap.isMutable()) {
+      // Create a mutable copy with the same width, height, and ARGB_8888 configuration
+      Bitmap mutableBitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
+      // Make sure to recycle the original bitmap if you no longer need it
+      originalBitmap.recycle();
+
+      return mutableBitmap;
+    }
+
+    return originalBitmap;
   }
 
   // Método para obtener un Bitmap de una url
-  public static Bitmap getBitmapFormUrl(String url) throws IOException {
+  public static Bitmap getBitmapFromUrl(String url) throws IOException {
+    Log.d("ZplCodeModule", "getBitmapFromUrl: " + url);
     // Si es una URL
     URL src = new URL(url);
     HttpURLConnection connection = null;
@@ -163,6 +200,7 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
 
   // Método para convertir una cadena Base64 a un objeto Bitmap
   public static Bitmap getBitmapFromBase64(String base64String) {
+    Log.d("ZplCodeModule", "getBitmapFromBase64");
     // Decodificar los datos base64 a un array de bytes
     byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
     // Convertir el array de bytes a un objeto Bitmap
