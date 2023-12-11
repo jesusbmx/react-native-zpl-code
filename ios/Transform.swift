@@ -1,8 +1,7 @@
 //
 //  Transform.swift
-//  Text2Barcode
 //
-//  Created by Sistemas on 22/11/22.
+//  Created by jbmx on 22/11/22.
 //
 import Foundation
 import UIKit
@@ -18,7 +17,7 @@ protocol Transform
  */
 class Dither: NSObject, Transform
 {
-  enum DitheringType: String {
+  public enum DitheringType: String {
       case floydSteinberg = "floydSteinberg"
       case sierra = "sierra"
   }
@@ -43,19 +42,17 @@ class Dither: NSObject, Transform
   }
   
   public func errors(_ image: PixelImage) -> [[Pixel]] {
-    var errors = [[Pixel]]()
+    var errors = [[Pixel]](
+      repeating: [Pixel](repeating: Pixel.white, count: image.getWidth()),
+      count: image.getHeight())
 
-    for y in 0 ..< image.height {
-      var row = [Pixel]()
-      
-      for x in 0 ..< image.width {
-        let pixel = image.getPixel(x: x, y: y)!
-        row.append(Pixel(pixel));
+    for y in 0 ..< image.getHeight() {
+      for x in 0 ..< image.getWidth() {
+        let pixel = image.getArgb(x: x, y: y)
+        errors[y][x] = Pixel(argb: pixel)
       }
-      
-      errors.append(row)
     }
-    
+
     return errors
   }
   
@@ -67,48 +64,44 @@ class Dither: NSObject, Transform
    *
    * (1/8)
    */
-  public func floydSteinberg(_ image: PixelImage) -> PixelImage
+  public func floydSteinberg(_ img: PixelImage) -> PixelImage
   {
-    var r = image.pixelData
-    let w: Int = r.width;
-    let h: Int = r.height;
-    
-    var errors = self.errors(image)
+    let w = img.getWidth()
+    let h = img.getHeight()
 
-    for y in 0 ..< h
-    {
-      for x in 0 ..< w
-      {
-        let oldColor: Pixel = errors[y][x];
-        let newColor: Pixel = Pixel.findClosestPaletteColor(oldColor);
-        
-        r[x, y] = newColor.toRgb();
+    var errors = self.errors(img)
 
-        let err: Pixel = oldColor.sub(newColor);
+    for y in 0 ..< h {
+      for x in 0 ..< w {
+        let oldColor = errors[y][x]
+        let newColor = Pixel.findClosestPaletteColor(oldColor)
+        img[x, y] = newColor.toArgb()
 
-        if (x + 1 < w) {
-          let mul = err.mul(7.0 / 16)
-          errors[y][x + 1] = errors[y][x + 1].sum(mul);
+        let err = oldColor.sub(newColor)
+
+        let x1 = x + 1
+        let x2 = x + 2
+        let y1 = y + 1
+
+        if x1 < w {
+          errors[y][x1] = errors[y][x1].sum(err.mul(7.0 / 16))
         }
-        
-        if (x - 1 >= 0 && y + 1 < h) {
-          let mul = err.mul(3.0 / 16)
-          errors[y + 1][x - 1] = errors[y + 1][x - 1].sum(mul);
+
+        if x2 < w {
+          errors[y][x2] = errors[y][x2].sum(err.mul(1.0 / 16))
         }
-        
-        if (y + 1 < h) {
-          let mul = err.mul(5.0 / 16)
-          errors[y + 1][x] = errors[y + 1][x].sum(mul);
+
+        if x1 < w && y1 < h {
+          errors[y1][x1] = errors[y1][x1].sum(err.mul(3.0 / 16))
         }
-        
-        if (x + 1 < w && y + 1 < h) {
-          let mul = err.mul(1.0 / 16)
-          errors[y + 1][x + 1] = errors[y + 1][x + 1].sum(mul);
+
+        if y1 < h {
+          errors[y1][x] = errors[y1][x].sum(err.mul(5.0 / 16))
         }
       }
     }
-    
-    return r
+
+    return img
   }
   
   /*
@@ -120,17 +113,15 @@ class Dither: NSObject, Transform
    *
    * (1/32)
    */
-  public func sierra(_ src: PixelImage) -> PixelImage
+  public func sierra(_ img: PixelImage) -> PixelImage
   {
-    var r = src
-    
     var alpha: Int
     var red: Int
     var gray: Int
-    var pixel: UIColor
+    var pixel: Int
 
-    let width: Int = r.width;
-    let height: Int = r.height;
+    let width: Int = img.getWidth();
+    let height: Int = img.getHeight();
     
     var error: Int = 0;
     var errors = Array(repeating: Array(repeating: 0, count: width), count: height)
@@ -139,10 +130,10 @@ class Dither: NSObject, Transform
     {
       for x in 0 ..< width
       {
-        pixel = src.pixelAt(x: x, y: y)!
+        pixel = img.getArgb(x: x, y: y)
 
-        alpha = Int(pixel.alpha);
-        red = Int(pixel.red);
+        alpha = Pixel.alpha(pixel);
+        red = Pixel.red(pixel);
 
         gray = red;
         if (gray + errors[x][y] < 127) {
@@ -166,12 +157,12 @@ class Dither: NSObject, Transform
         errors[x][y + 2] += (3 * error) / 32;
         errors[x + 1][y + 2] += (2 * error) / 32;
 
-        r[x, y] = UIColor(
-          red: UInt8(gray), green: UInt8(gray), blue: UInt8(gray), alpha: UInt8(alpha)
+        img[x, y] = Pixel.toArgb(
+          red: gray, green: gray, blue: gray, alpha: alpha
         )
       }
     }
 
-    return r
+    return img
   }
 }

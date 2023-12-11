@@ -1,12 +1,10 @@
 //
 //  ZplLibGraphics.swift
-//  Text2Barcode
 //
-//  Created by Sistemas on 29/11/22.
+//  Created by jbmx on 29/11/22.
 //
 
 import Foundation
-//import DeflateSwift
 import Compression
 
 class ZplLibGraphics
@@ -96,8 +94,8 @@ class ZplLibGraphics
   {
     Utils.log("[ZplLibGraphics]", "getZplCode -> x:\(x) y:\(y) prefixAndSuffix:\(prefixAndSuffix)")
     
-    let width: Int = pixels.width();
-    let height: Int = pixels.height();
+    let width: Int = pixels.getWidth();
+    let height: Int = pixels.getHeight();
     
     var data: [UInt8] = pixels.getRasterBytes();
     let bytesPerRow: Int = data.count / height;

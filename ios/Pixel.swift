@@ -1,61 +1,74 @@
 //
 //  Color.swift
-//  Text2Barcode
 //
-//  Created by Sistemas on 27/12/22.
+//  Created by jbmx on 27/12/22.
 //
 
 import Foundation
-import SwiftImage
 
 
 class Pixel
 {
+  public static let white = Pixel(red:255, green: 255, blue: 255)
+  public static let black = Pixel(red:  0, green:   0, blue:   0)
+  
   public static let palette: [Pixel] =  [
-    Pixel(  0,   0,   0), // black
-    Pixel(  0,   0, 255), // green
-    Pixel(  0, 255,   0), // blue
-    Pixel(  0, 255, 255), // cyan
-    Pixel(255,   0,   0), // red
-    Pixel(255,   0, 255), // purple
-    Pixel(255, 255,   0), // yellow
-    Pixel(255, 255, 255)  // white
+    Pixel(red:  0, green:   0, blue:   0), // black
+    Pixel(red:  0, green:   0, blue: 255), // green
+    Pixel(red:  0, green: 255, blue:   0), // blue
+    Pixel(red:  0, green: 255, blue: 255), // cyan
+    Pixel(red:255, green:   0, blue:   0), // red
+    Pixel(red:255, green:   0, blue: 255), // purple
+    Pixel(red:255, green: 255, blue:   0), // yellow
+    Pixel(red:255, green: 255, blue: 255)  // white
   ];
   
-  public let r: Int;
-  public let g: Int;
-  public let b: Int;
-  public let a: Int;
+  public let red: Int;
+  public let green: Int;
+  public let blue: Int;
+  public let alpha: Int;
 
-  public init(_ r: Int, _ g: Int, _ b: Int, _ a: Int = 255) {
-    self.r = r;
-    self.g = g;
-    self.b = b;
-    self.a = a;
+  public init(red: Int, green: Int, blue: Int, alpha: Int = 255) {
+    self.red = red;
+    self.green = green;
+    self.blue = blue;
+    self.alpha = alpha;
   }
   
-  public init(_ rgb: UIColor) {
-    self.r = Int(rgb.red);
-    self.g = Int(rgb.green);
-    self.b = Int(rgb.blue);
-    self.a = Int(rgb.alpha)
+  public init(pixel: Pixel) {
+    self.red = Int(pixel.red);
+    self.green = Int(pixel.green);
+    self.blue = Int(pixel.blue);
+    self.alpha = Int(pixel.alpha)
+  }
+  
+  public init(argb: Int) {
+    self.red = Pixel.red(argb);
+    self.green = Pixel.green(argb);
+    self.blue = Pixel.blue(argb);
+    self.alpha = Pixel.alpha(argb);
+  }
+  
+  // Calcula la intensidad de gris basada en las componentes RGB
+  public var gray: Int {
+    return (red + green + blue) / 3
   }
 
   public func sum(_ o: Pixel) -> Pixel {
     return Pixel(
-      r + o.r,
-      g + o.g,
-      b + o.b,
-      a + o.a
+      red: red + o.red,
+      green: green + o.green,
+      blue: blue + o.blue,
+      alpha: alpha + o.alpha
     );
   }
 
   public func sub(_ o: Pixel) -> Pixel {
       return Pixel(
-        r - o.r,
-        g - o.g,
-        b - o.b,
-        a - o.a
+        red: red - o.red,
+        green: green - o.green,
+        blue: blue - o.blue,
+        alpha: alpha - o.alpha
       );
   }
   
@@ -64,30 +77,25 @@ class Pixel
   }
 
   public func diff(_ o: Pixel) -> Int {
-    let Rdiff = o.r - r;
-    let Gdiff = o.g - g;
-    let Bdiff = o.b - b;
-    let Adiff = o.a - a;
+    let Rdiff = o.red - red;
+    let Gdiff = o.green - green;
+    let Bdiff = o.blue - blue;
+    let Adiff = o.alpha - alpha;
     let distanceSquared = Rdiff * Rdiff + Gdiff * Gdiff + Bdiff * Bdiff + Adiff * Adiff;
     return distanceSquared;
   }
 
   public func mul(_ d: Double) -> Pixel {
       return Pixel(
-        Int(d * Double(r)),
-        Int(d * Double(g)),
-        Int(d * Double(b)),
-        Int(d * Double(a))
+        red: Int(d * Double(red)),
+        green: Int(d * Double(green)),
+        blue: Int(d * Double(blue)),
+        alpha: Int(d * Double(alpha))
       );
   }
-
-  public func toRgb() -> UIColor {
-      return UIColor(
-        red: UInt8(clamp(r)),
-        green: UInt8(clamp(g)),
-        blue: UInt8(clamp(b)),
-        alpha: UInt8(clamp(a))
-      );
+  
+  public func toArgb() -> Int {
+    return (alpha << 24) | (red << 16) | (green << 8) | blue
   }
   
   public static func findClosestPaletteColor(_ value: Pixel) -> Pixel {
@@ -109,12 +117,23 @@ class Pixel
    * @param argb
    * @return Blanco(1) or Negro(0)
    */
-  public static func toBitChar(
-    _ pixel: UIColor,
+  public static func zeroOrOneAsChar(
+    pixel: Pixel,
     threshold: UInt8 = 128
   ) -> Character
   {
     if (pixel.gray >= threshold) {
+        return "0"; // Negro
+    }
+    return "1"; // Blanco*/
+  }
+  
+  public static func zeroOrOneAsChar(
+    argb: Int,
+    threshold: UInt8 = 128
+  ) -> Character
+  {
+    if (Pixel.gray(argb) >= threshold) {
         return "0"; // Negro
     }
     return "1"; // Blanco*/
@@ -127,11 +146,53 @@ class Pixel
    * @param argb
    * @return Blanco(1) or Negro(0)
    */
-  public static func toBit(
-    _ pixel: UIColor,
+  public static func zeroOrOne(
+    pixel: Pixel,
     threshold: UInt8 = 128
   ) -> UInt8 {
     return (pixel.gray < threshold) ? 1 : 0
   }
   
+  public static func zeroOrOne(
+    argb: Int,
+    threshold: UInt8 = 128
+  ) -> UInt8 {
+    return (Pixel.gray(argb) < threshold) ? 1 : 0
+  }
+  
+  public static func alpha(_ argb: Int) -> Int {
+    return (argb >> 24) & 0xFF
+  }
+  
+  public static func red(_ argb: Int) -> Int {
+    return (argb >> 16) & 0xFF
+  }
+  
+  public static func green(_ argb: Int) -> Int {
+    return (argb >> 8) & 0xFF
+  }
+  
+  public static func blue(_ argb: Int) -> Int {
+    return argb & 0xFF
+  }
+  
+  // Método de luminosidad:
+  public static func gray(_ argb: Int) -> Int {
+    /*
+     let redValue = red(argb)
+     let greenValue = green(argb)
+     let blueValue = blue(argb)
+     return (redValue + greenValue + blueValue) / 3
+    */
+    let redValue = red(argb)
+    let greenValue = green(argb)
+    let blueValue = blue(argb)
+    return Int(0.299 * Double(redValue) + 0.587 * Double(greenValue) + 0.114 * Double(blueValue))
+  }
+  
+  public static func toArgb(
+    red: Int, green: Int, blue: Int, alpha: Int
+  ) -> Int {
+    return (alpha << 24) | (red << 16) | (green << 8) | blue
+  }
 }

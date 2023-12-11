@@ -1,19 +1,17 @@
 //
 //  Filter.swift
-//  Text2Barcode
 //
-//  Created by Sistemas on 23/12/22.
+//  Created by jbmx on 23/12/22.
 //
 
 import Foundation
-import SwiftImage
 
 /*
   Filtro para PixelImage
  */
 protocol Filter
 {
-  func pixel(_ argb: UIColor) -> UIColor
+  func apply(argb: Int) -> Int
 }
 
 
@@ -26,7 +24,7 @@ protocol Filter
  -   0     0     0   black (a sort of gray)
  - 255   255   255   white (ditto)
 */
-public class GrayScale: NSObject, Filter
+class GrayScale: NSObject, Filter
 {
   public let r: Int
   public let g: Int
@@ -50,21 +48,30 @@ public class GrayScale: NSObject, Filter
     return "GrayScale(r:\(r) g:\(g) b:\(b))"
   }
   
-  public func pixel(_ argb: UIColor) -> UIColor {
-    let rg = Int(Int(argb.red) * self.r);
-    let gg = Int(Int(argb.green) * self.g);
-    let bg = Int(Int(argb.blue) * self.b);
-    var totalColor: Int = (rg + gg + bg) / 100;
+  public func apply(argb: Int) -> Int {
+    // Obtener el canal alfa (transparencia)
+    let alpha = Pixel.alpha(argb)
     
+    // Si el píxel es transparente, establecerlo como blanco
+    if (alpha == 0) {
+      return Pixel.white.toArgb()
+    }
+
+    let rg = Int(Pixel.red(argb) * self.r);
+    let gg = Int(Pixel.green(argb) * self.g);
+    let bg = Int(Pixel.blue(argb) * self.b);
+    
+    var totalColor: Int = (rg + gg + bg) / 100;
     if (totalColor > 255) {
         totalColor = 255;
     } else if (totalColor < 0) {
         totalColor = 0;
     }
     
-    let gray = UInt8(totalColor)
-    
-    return UIColor(red: gray, green: gray, blue: gray, alpha: argb.alpha)
+    let gray = totalColor
+        
+    return Pixel.toArgb(
+      red: gray, green: gray, blue: gray, alpha: alpha)
   }
 }
 
@@ -78,11 +85,18 @@ public class Sepia: NSObject, Filter
     return "Sepia()"
   }
   
-  public func pixel(_ argb: UIColor) -> UIColor {
-    var a = Int(argb.alpha)
-    var r = Int(argb.red)
-    var g = Int(argb.green)
-    var b = Int(argb.blue)
+  public func apply(argb: Int) -> Int {
+    // Obtener el canal alfa (transparencia)
+    let a = Pixel.alpha(argb)
+    
+    // Si el píxel es transparente, establecerlo como blanco
+    if (a == 0) {
+      return Pixel.white.toArgb()
+    }
+    
+    var r = Pixel.red(argb)
+    var g = Pixel.green(argb)
+    var b = Pixel.blue(argb)
     
     // calculate
     let newRed = Int(0.393 * Float(r) + 0.769 * Float(g) + 0.189 * Float(b))
@@ -108,6 +122,6 @@ public class Sepia: NSObject, Filter
       b = newBlue
     }
     
-    return UIColor(red: UInt8(r), green: UInt8(g), blue: UInt8(b), alpha: UInt8(a))
+    return Pixel.toArgb(red: r, green: g, blue: b, alpha: a)
   }
 }

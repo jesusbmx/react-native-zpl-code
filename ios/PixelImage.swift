@@ -1,8 +1,7 @@
 //
 //  PixelImage.swift
-//  Text2Barcode
 //
-//  Created by Sistemas on 23/11/22.
+//  Created by jbmx on 23/11/22.
 //
 
 import Foundation
@@ -11,56 +10,83 @@ import Accelerate
 
 class PixelImage: NSObject
 {
-  /* Imagen en pixeles */
-  private let cgImage: CGImage;
+  public static let bitsPerComponent = 8
+  public static let bytesPerPixel = 4
+  
+  private let cgImage: CGImage?
   private let width: Int
   private let height: Int
-  private let bitsPerComponent = 8
-  private let bytesPerPixel = 4
   private let bytesPerRow: Int
-  public var pixelData: [UInt8]
+  private var pixelData: [UInt8]
   
-  init(cgImage: CGImage) throws 
-  {
-    self.cgImage = cgImage;
-    self.width = cgImage.width
-    self.height = cgImage.height
+  init(width: Int, height: Int, argb: Int) {
+    self.width = width
+    self.height = height
+    self.bytesPerRow = PixelImage.bytesPerPixel * width
+    
+    // Rellenar pixelData con el valor ARGB
+    let byteValue = UInt8(argb & 0xFF)
 
-    self.bytesPerRow = self.bytesPerPixel * self.width
+    // Crear un array unidimensional directamente sin pasar por una matriz 2D
+    self.pixelData = [UInt8](repeating: byteValue, count: width * height * PixelImage.bytesPerPixel)
+
     let colorSpace = CGColorSpaceCreateDeviceRGB()
-
-    self.pixelData = [UInt8](repeating: 0, count: self.bytesPerRow * self.height)
-
-    guard let context = CGContext(data: &self.pixelData,
-                                      width: self.width,
-                                      height: self.height,
-                                      bitsPerComponent: self.bitsPerComponent,
-                                      bytesPerRow: self.bytesPerRow,
-                                      space: colorSpace,
-                                      bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else {
-        
-        throw NSError(domain: "PixelImageErrorDomain", code: 1, userInfo: nil)
-    }
-                            
-    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: self.width, height: self.height))
+    let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
+    let provider = CGDataProvider(data: NSData(bytes: &self.pixelData, length: self.pixelData.count))
+    
+    self.cgImage = CGImage(
+      width: self.width,
+      height: self.height,
+      bitsPerComponent: PixelImage.bitsPerComponent,
+      bitsPerPixel: PixelImage.bytesPerPixel * 8,
+      bytesPerRow: self.bytesPerRow,
+      space: colorSpace,
+      bitmapInfo: bitmapInfo,
+      provider: provider!,
+      decode: nil,
+      shouldInterpolate: true,
+      intent: .defaultIntent
+    )
   }
   
-  convenience init(uiImage: UIImage) throws
-  {
+  init(cgImage: CGImage) throws {
+    self.cgImage = cgImage
+    self.width = cgImage.width
+    self.height = cgImage.height
+    self.bytesPerRow = PixelImage.bytesPerPixel * self.width
+    self.pixelData = [UInt8](repeating: 0, count: self.bytesPerRow * self.height)
+
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+
+    guard let context = CGContext(data: &self.pixelData,
+                                  width: self.width,
+                                  height: self.height,
+                                  bitsPerComponent: PixelImage.bitsPerComponent,
+                                  bytesPerRow: self.bytesPerRow,
+                                  space: colorSpace,
+                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else {
+        
+      fatalError("Invalid Context")
+    }
+                            
+    context.draw(cgImage, in: CGRect(
+      x: 0, y: 0, width: self.width, height: self.height))
+  }
+  
+  convenience init(uiImage: UIImage) throws {
     guard let cgImage = uiImage.cgImage else {
       fatalError("Image Conversion Error")
     }
-    self.init(image: uiImage.cgImage)
+    try self.init(cgImage: cgImage)
   }
   
-  convenience init(data: Data) throws
-  {
+  convenience init(data: Data) throws {
     // Definimos la scale en 1.0 para obtimizar los tiempos de carga
-    self.init(uiImage: UIImage(data: data, scale: 1.0)!)
+    try self.init(uiImage: UIImage(data: data, scale: 1.0)!)
   }
   
   public override var description: String {
-    return "PixelImage(w:\(width()) h:\(height())"
+    return "PixelImage(w:\(self.getWidth()) h:\(self.getHeight())"
   }
   
   /**
@@ -78,47 +104,128 @@ class PixelImage: NSObject
   }
   
   /**
-   * Obtiene el pixel de la imagen segun la cordenada
+   * Obtiene el valor ARGB de la imagen según las coordenadas.
    */
-  public func getPixel(x: Int, y: Int) -> UIColor {
-    let pixelIndex = y * self.bytesPerRow + x * self.bytesPerPixel
+  public func getArgb(x: Int, y: Int) -> Int {
+    let pixelIndex = y * self.bytesPerRow + x * PixelImage.bytesPerPixel
+    guard pixelIndex < self.pixelData.count else {
+      fatalError("Error: Attempted to access a pixel outside the bounds of the context. Requested position: (\(x), \(y))")
+    }
 
-    let red = CGFloat(self.pixelData[pixelIndex]) / 255.0
-    let green = CGFloat(self.pixelData[pixelIndex + 1]) / 255.0
-    let blue = CGFloat(self.pixelData[pixelIndex + 2]) / 255.0
-    let alpha = CGFloat(self.pixelData[pixelIndex + 3]) / 255.0
+    let red = Int(self.pixelData[pixelIndex])
+    let green = Int(self.pixelData[pixelIndex + 1])
+    let blue = Int(self.pixelData[pixelIndex + 2])
+    let alpha = Int(self.pixelData[pixelIndex + 3])
 
-    return UIColor(red: red, green: green, blue: blue, alpha: alpha)
+    return Pixel.toArgb(red: red, green: green, blue: blue, alpha: alpha)
+  }
+
+  /**
+   * Setea el valor ARGB en la imagen según las coordenadas.
+   */
+  public func setArgb(x: Int, y: Int, _ argb: Int) {
+    let pixelIndex = (self.bytesPerRow * y) + x * PixelImage.bytesPerPixel
+    guard pixelIndex < self.pixelData.count else { return }
+
+    self.pixelData[pixelIndex] = UInt8(Pixel.red(argb))       // Rojo
+    self.pixelData[pixelIndex + 1] = UInt8(Pixel.green(argb)) // Verde
+    self.pixelData[pixelIndex + 2] = UInt8(Pixel.blue(argb))  // Azul
+    self.pixelData[pixelIndex + 3] = UInt8(Pixel.alpha(argb)) // Alfa
+  }
+  
+  // Subscript para acceder a un píxel específico
+  public subscript(x: Int, y: Int) -> Int {
+    get {
+      // Obtener el píxel en la posición (x, y)
+      return getArgb(x: x, y: y)
+    }
+    set(newValue) {
+      // Asignar un nuevo valor al píxel en la posición (x, y)
+      setArgb(x: x, y: y, newValue)
+    }
   }
   
   /**
-   * Setea el pixel en la imagen segun la cordenada
-   */
-  public func setPixel(x: Int, y: Int, pixel: UIColor) {
-    let byteIndex = (self.bytesPerRow * y) + x * self.bytesPerPixel
-    guard byteIndex < self.pixelData.count else { return }
-
-    self.pixelData[byteIndex] = UInt8(pixel.red * 255.0)
-    self.pixelData[byteIndex + 1] = UInt8(pixel.green * 255.0)
-    self.pixelData[byteIndex + 2] = UInt8(pixel.blue * 255.0)
-    self.pixelData[byteIndex + 3] = UInt8(pixel.alpha * 255.0)
-  }
-  
-  /**
+   * Otsu's Method.
+   *
+   * Utiliza el método de Otsu, que es un enfoque bien establecido y
+   * ampliamente utilizado para determinar el umbral óptimo en imágenes
+   * binarias.
+   *
    * Calcula el limite para entre los pixeles blanco y negros.
    */
   public func threshold() -> UInt8 {
-    let totalPixels = self.width * self.height
+    /*let totalPixels = self.width * self.height
     var totalGray: Int = 0
 
     for y in 0..<self.height {
       for x in 0..<self.width {
-        let pixel = self.getPixel(x: x, y: y)
-        totalGray += Int(pixel.gray * 255.0)
+        let pixel: Int = self.getArgb(x: x, y: y)
+        totalGray += Int(Pixel.gray(pixel) * 255)
       }
     }
 
-    return UInt8(totalGray / totalPixels)
+    return UInt8(totalGray / totalPixels)*/
+
+    // Get the histogram of pixel intensities
+    var histogram = [Int](repeating: 0, count: 256)
+    for y in 0..<getHeight() {
+      for x in 0..<getWidth() {
+        let pixel = getArgb(x: x, y: y)
+        let intensity = Pixel.gray(pixel)
+        histogram[Int(intensity)] += 1
+      }
+    }
+
+    // Calculate the total number of pixels
+    let totalPixels = getWidth() * getHeight()
+
+    // Calculate the sum of intensities and sum of squared intensities
+    var sum = 0
+    var sumOfSquares = 0
+    for i in 0..<256 {
+      sum += i * histogram[i]
+      sumOfSquares += i * i * histogram[i]
+    }
+
+    var maxVariance = 0.0
+    var threshold: UInt8 = 0
+
+    var sumForeground = 0
+    var sumBackground = 0
+    var countForeground = 0
+    var countBackground = 0
+
+    // Iterate through intensities to find the optimal threshold
+    for i in 0..<256 {
+      countBackground += histogram[i]
+      if countBackground == 0 {
+          continue
+      }
+
+      countForeground = totalPixels - countBackground
+      if countForeground == 0 {
+          break
+      }
+
+      sumBackground += i * histogram[i]
+      sumForeground = sum - sumBackground
+
+      let meanBackground = Double(sumBackground) / Double(countBackground)
+      let meanForeground = Double(sumForeground) / Double(countForeground)
+
+      // Calculate between-class variance
+      let betweenVariance = Double(countBackground) * Double(countForeground) *
+          pow(meanBackground - meanForeground, 2) / Double(totalPixels * totalPixels)
+
+      // Update if the variance is greater than the current maximum
+      if betweenVariance > maxVariance {
+          maxVariance = betweenVariance
+          threshold = UInt8(i)
+      }
+    }
+
+    return threshold
   }
     
   /**
@@ -131,16 +238,8 @@ class PixelImage: NSObject
 
     for row in 0..<height {
       for col in 0..<width {
-        let pixel = self.getPixel(x: col, y: row)
-
-        // Obtener el canal alfa (transparencia)
-        let alpha = pixel.alpha
-        // Si el píxel es transparente, establecerlo como blanco
-        if alpha == 0 {
-          self.setPixel(x: col, y: row, pixel: UIColor.white)
-        } else {
-          self.setPixel(x: col, y: row, pixel: filter.pixel(pixel))
-        }
+        let pixel = self.getArgb(x: col, y: row)
+        self.setArgb(x: col, y: row, filter.apply(argb: pixel))
       }
     }
   }
@@ -152,19 +251,15 @@ class PixelImage: NSObject
     Utils.log("[PixelImage]", "apply -> transform:\(transform)")
     self.pixelData = transform.apply(self).pixelData
   }
-
-  public func uiImage() -> UIImage {
-    return UIImage(cgImage: self.cgImage)
-  }
   
+  public func getCGImage() -> CGImage? {
+    return self.cgImage
+  }
+
   /**
    * Escala la imagen
    */
-  public func newScale(width: Int, height: Int) -> PixelImage {
-    guard width > 0 && height > 0 else {
-      return self  // Retorna self si las dimensiones no son válidas
-    }
-
+  public func newScale(width: Int, height: Int) throws -> PixelImage {
     Utils.log("[PixelImage]", "newScale -> width:\(width) height:\(height)")
 
     let scale = UIScreen.main.scale  // Puedes ajustar esto según tus necesidades
@@ -174,17 +269,22 @@ class PixelImage: NSObject
     defer { UIGraphicsEndImageContext() }
 
     guard let context = UIGraphicsGetCurrentContext() else {
-      return nil  // Retorna nil si no se puede obtener el contexto gráfico
+      fatalError("Invalid Context")
     }
 
     context.interpolationQuality = .high
-    self.uiImage().draw(in: CGRect(origin: .zero, size: newSize))
+
+    guard let cgImage = self.getCGImage() else {
+      fatalError("Invalid CG Image")
+    }
+    
+    context.draw(cgImage, in: CGRect(origin: .zero, size: newSize))
 
     guard let scaledImage = UIGraphicsGetImageFromCurrentImageContext() else {
-      return nil  // Retorna nil si no se puede obtener la imagen escalada
+      fatalError("Invalid Image")
     }
 
-    return PixelImage(uiImage: scaledImage)
+    return try PixelImage(uiImage: scaledImage)
   }
   
   /**
@@ -194,9 +294,9 @@ class PixelImage: NSObject
    * @return
    */
   public func getHorizontalBytesOfRaster() -> Int {
-      return ((self.width() % 8) > 0)
-              ? (self.width() / 8) + 1
-              : (self.width() / 8);
+      return ((self.getWidth() % 8) > 0)
+              ? (self.getWidth() / 8) + 1
+              : (self.getWidth() / 8);
   }
   
   /**
@@ -207,15 +307,17 @@ class PixelImage: NSObject
     var byteArray = [UInt8]()
     var Byte: UInt8;
     var bits: Int;
+
+    //let threshold = self.threshold()
       
-    for y in 0 ..< image.height {
+    for y in 0 ..< getHeight() {
         Byte = 0;
         bits = 0;
         
-      for x in 0 ..< image.width {
+      for x in 0 ..< getWidth() {
         // Obtenemos un blanco o un negro del pixel.
-        let pixel = self.getPixel(x: x, y: y);
-        let zeroOrOne: UInt8 = Pixel.toBit(pixel); // black or White
+        let pixel = self.getArgb(x: x, y: y);
+        let zeroOrOne: UInt8 = Pixel.zeroOrOne(argb: pixel); // black or White
         
         Byte = Byte | (zeroOrOne << (7 - bits));
         bits = bits + 1;
@@ -271,7 +373,7 @@ class PixelImage: NSObject
     if (uri.hasPrefix("data:")) {
       if let commaIndex = uri.firstIndex(of: ",") {
         let base64 = uri.suffix(from: uri.index(after: commaIndex))
-        return try self.getImageFrom(base64: base64)
+        return try self.getImageFrom(base64: String(base64))
       }
       throw NSError(domain: "Header not found in base64 string", code: 500);
     }
@@ -281,7 +383,7 @@ class PixelImage: NSObject
         throw NSError(domain: "URL Not Found " + uri, code: 404);
       }
       let data = try Data(contentsOf: url)
-      return PixelImage(data: data)
+      return try PixelImage(data: data)
     }
 
     if (uri.hasPrefix("file://")) {
@@ -289,20 +391,20 @@ class PixelImage: NSObject
         throw NSError(domain: "File Not Found " + uri, code: 404);
       }
       let data = try Data(contentsOf: url)
-      return PixelImage(data: data)
+      return try PixelImage(data: data)
     }
 
     if !FileManager.default.fileExists(atPath: uri) {
       throw NSError(domain: "File Not Found " + uri, code: 404);
     }
     let data = FileManager.default.contents(atPath: uri)!
-    return PixelImage(data: data)
+    return try PixelImage(data: data)
   }
 
   public static func getImageFrom(base64: String) throws -> PixelImage {
     guard let base64DecodedData = Data(base64Encoded: base64) else {
       throw Utils.createError(message: "Failed to decode base64 string")
     }
-    return PixelImage(data: base64DecodedData)
+    return try PixelImage(data: base64DecodedData)
   }
 }

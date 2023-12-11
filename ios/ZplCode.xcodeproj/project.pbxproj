@@ -7,8 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5E555C0D2413F4C50049A1A2 /* ZplCode.mm in Sources */ = {isa = PBXBuildFile; fileRef = B3E7B5891CC2AC0600A0062D /* ZplCode.mm */; };
-		F4FF95D7245B92E800C19C63 /*  ZplCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FF95D6245B92E800C19C63 /*  ZplCode.swift */; };
+		1A3211392B25019B007778DB /* Pixel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3211352B2500CA007778DB /* Pixel.swift */; };
+		1A32113A2B2501A2007778DB /* Filter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3211362B2500F3007778DB /* Filter.swift */; };
+		1A32113B2B2501A5007778DB /* Transform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3211372B250111007778DB /* Transform.swift */; };
+		1A32113C2B2501A8007778DB /* PixelImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3211382B25016C007778DB /* PixelImage.swift */; };
+		1A3211402B250237007778DB /* ZplLibGraphics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A32113F2B250237007778DB /* ZplLibGraphics.swift */; };
+		1A3211422B2506C7007778DB /* DeflateSwift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3211412B2506C7007778DB /* DeflateSwift.swift */; };
+		1A3211442B250715007778DB /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3211432B250715007778DB /* Utils.swift */; };
+		F4FF95D7245B92E800C19C63 /* ZplCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FF95D6245B92E800C19C63 /* ZplCode.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +31,13 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libZplCode.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libZplCode.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A3211352B2500CA007778DB /* Pixel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pixel.swift; sourceTree = "<group>"; };
+		1A3211362B2500F3007778DB /* Filter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Filter.swift; sourceTree = "<group>"; };
+		1A3211372B250111007778DB /* Transform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transform.swift; sourceTree = "<group>"; };
+		1A3211382B25016C007778DB /* PixelImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelImage.swift; sourceTree = "<group>"; };
+		1A32113F2B250237007778DB /* ZplLibGraphics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZplLibGraphics.swift; sourceTree = "<group>"; };
+		1A3211412B2506C7007778DB /* DeflateSwift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeflateSwift.swift; sourceTree = "<group>"; };
+		1A3211432B250715007778DB /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		B3E7B5891CC2AC0600A0062D /* ZplCode.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZplCode.mm; sourceTree = "<group>"; };
 		F4FF95D5245B92E700C19C63 /* ZplCode-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "ZplCode-Bridging-Header.h"; sourceTree = "<group>"; };
 		F4FF95D6245B92E800C19C63 /* ZplCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZplCode.swift; sourceTree = "<group>"; };
@@ -52,6 +65,13 @@
 		58B511D21A9E6C8500147676 = {
 			isa = PBXGroup;
 			children = (
+				1A3211432B250715007778DB /* Utils.swift */,
+				1A3211412B2506C7007778DB /* DeflateSwift.swift */,
+				1A32113F2B250237007778DB /* ZplLibGraphics.swift */,
+				1A3211382B25016C007778DB /* PixelImage.swift */,
+				1A3211372B250111007778DB /* Transform.swift */,
+				1A3211362B2500F3007778DB /* Filter.swift */,
+				1A3211352B2500CA007778DB /* Pixel.swift */,
 				F4FF95D6245B92E800C19C63 /* ZplCode.swift */,
 				B3E7B5891CC2AC0600A0062D /* ZplCode.mm */,
 				F4FF95D5245B92E700C19C63 /* ZplCode-Bridging-Header.h */,
@@ -116,8 +136,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A3211442B250715007778DB /* Utils.swift in Sources */,
+				1A3211392B25019B007778DB /* Pixel.swift in Sources */,
+				1A32113A2B2501A2007778DB /* Filter.swift in Sources */,
+				1A32113C2B2501A8007778DB /* PixelImage.swift in Sources */,
+				1A32113B2B2501A5007778DB /* Transform.swift in Sources */,
 				F4FF95D7245B92E800C19C63 /* ZplCode.swift in Sources */,
-				B3E7B58A1CC2AC0600A0062D /* ZplCode.mm in Sources */,
+				1A3211402B250237007778DB /* ZplLibGraphics.swift in Sources */,
+				1A3211422B2506C7007778DB /* DeflateSwift.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

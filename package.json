@@ -1,6 +1,6 @@
 {
   "name": "react-native-zpl-code",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Zpl Code Generator",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",

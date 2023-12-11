@@ -8,6 +8,7 @@ export default function App() {
   const [result, setResult] = React.useState<string | undefined>();
 
   const generateWithImage = async (uri: string) => {
+    console.debug("generateWithImage", uri)
     // Create a ZPL builder instance
     const zplBuilder = new Zpl.Builder();
 
@@ -91,6 +92,7 @@ export default function App() {
 
   const pickImageFile = async () => {
     try {
+      //const uri = "https://s-media-cache-ak0.pinimg.com/236x/ac/bb/d4/acbbd49b22b8c556979418f6618a35fd.jpg"
       const { uri } = await DocumentPicker.pickSingle({
         type: [DocumentPicker.types.images],
       });

@@ -1,3 +1,5 @@
+import Foundation
+
 @objc(ZplCode)
 class ZplCode: NSObject {
 
@@ -8,24 +10,25 @@ class ZplCode: NSObject {
   ) -> Void {
 
     do {
+        
       // Obtener propiedades de la ReadableMap
-      var image: PixelImage = try ZplCode.getImageFrom(props: props);
-      var xOffset: Int? = props.hasKey("x") ? props.getInt("x") : nil;
-      var yOffset: Int? = props.hasKey("y") ? props.getInt("y") : nil;
-      var width: Int = props.getInt("width");
-      var height: Int = props.getInt("height");
-      var center: Bool = props.hasKey("center") && props.getBoolean("center");
-      var dither: Bool = props.hasKey("dither") && props.getBoolean("dither");
+      var image: PixelImage = try getImageFrom(props: props);
 
-      var maxWidth: Int   = width   <= 0 ?  image.getWidth()  : width;
-      var maxHeight: Int  = height  <= 0 ?  image.getHeight() : height;
-
-      var desiredWidth: Int = maxWidth;
-      var desiredHeight: Int = maxHeight;
+      var xOffset: Int = Utils.getValue(props, key: "x") ?? 0
+      var yOffset: Int = Utils.getValue(props, key: "y") ?? 0
+        
+      let width: Int = Utils.getValue(props, key: "width")!
+      let height: Int = Utils.getValue(props, key: "height")!
+            
+      let maxWidth: Int   = width   <= 0 ?  image.getWidth()  : width
+      let maxHeight: Int  = height  <= 0 ?  image.getHeight() : height
+        
+      var desiredWidth: Int = maxWidth
+      var desiredHeight: Int = maxHeight
 
       // Resize
-      var actualWidth: Int = image.getWidth();
-      var actualHeight: Int = image.getHeight();
+      let actualWidth: Int = image.getWidth();
+      let actualHeight: Int = image.getHeight();
 
       // Then compute the dimensions we would ideally like to decode to.
       desiredWidth = PixelImage.getResizedDimension(maxWidth, maxHeight, actualWidth, actualHeight);
@@ -33,43 +36,35 @@ class ZplCode: NSObject {
       desiredHeight = PixelImage.getResizedDimension(maxHeight, maxWidth, actualHeight, actualWidth);
 
 
-      if (center) {
+      if (Utils.getValue(props, key: "center") ?? false) {
         xOffset = (maxWidth - desiredWidth) / 2;
         yOffset = (maxHeight - desiredHeight) / 2;
       }
 
-      var newImage: PixelImage = image.newScale(desiredWidth, desiredHeight);
-      //newImage.apply(filter: Sepia())
-      newImage.apply(filter: GrayScale.DARK_GRAY) // 25 secs    28960
-      //newImage.apply(filter: GrayScale(57, 57, 57)) // 23 secs    26996
-      //newImage.apply(filter: GrayScale(65, 65, 65)) // 19s secs 23632
-
-      if (dither) {
-        newImage.apply(transform: Dither(type: .floydSteinberg));
+      let newImage = try image.newScale(width: desiredWidth, height: desiredHeight)
+      
+      if (Utils.getValue(props, key: "dither") ?? true) {
+        newImage.apply(transform: Dither(type: .floydSteinberg))
       }
 
-      let graphics = ZplLibGraphics(newImage);
-      graphics.setPoint(xOffset, yOffset);
-      let zpl = graphics.getZplCode(true);
+      let graphics = ZplLibGraphics(pixels: newImage)
+      let zpl = graphics.getZplCode(x: xOffset, y: yOffset, prefixAndSuffix: false)
 
-      promise.resolve(zpl);
+      resolve(zpl);
 
     } catch let error {
       reject("0", error.localizedDescription, nil)
     }
   }
 
-  static func getImageFrom(props: NSDictionary) throws -> PixelImage {
-    Utils.log("[ZplCode]", "getImageFromProps -> props:\(props)")
+  func getImageFrom(props: NSDictionary) throws -> PixelImage {
+    Utils.log("[RNZpl]", "getImageFromProps -> props:\(props)")
 
-    var uri: String? = props.hasKey("uri") ? props.getString("uri") : nil;
-    var base64: String? = props.hasKey("base64") ? props.getString("base64") : nil;
-    
-    if (uri != nil) {
+    if let uri = props["uri"] as? String {
       return try PixelImage.getImageFrom(uri: uri)
     }
-
-    if (uri != nil) {
+    
+    if let base64 = props["base64"] as? String {
       return try PixelImage.getImageFrom(base64: base64)
     }
 
