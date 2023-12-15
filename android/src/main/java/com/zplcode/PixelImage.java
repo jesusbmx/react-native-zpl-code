@@ -1,7 +1,6 @@
 package com.zplcode;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 
 import java.io.ByteArrayOutputStream;
 
@@ -9,16 +8,20 @@ public class PixelImage {
 
   public final Bitmap bitmap;
 
-  public PixelImage(Bitmap bitmap) {
-    this.bitmap = bitmap;
+  public PixelImage(Bitmap b) {
+    if (null == b) {
+      throw new IllegalArgumentException("bitmap arg cannot be null");
+    } else {
+      this.bitmap = b;
+    }
   }
 
-  public int getPixel(int x, int y) {
+  public int getArgb(int x, int y) {
     return bitmap.getPixel(x, y);
   }
 
-  public void setPixel(int x, int y, int rgb) {
-    bitmap.setPixel(x, y, rgb);
+  public void setArgb(int x, int y, int argb) {
+    bitmap.setPixel(x, y, argb);
   }
 
   public int getHeight() {
@@ -39,26 +42,99 @@ public class PixelImage {
     }
   }
 
+  /* Aplica un dither a la imagen */
+  public PixelImage newTransform(Transform transform) {
+    return transform.apply(this);
+  }
+
+  /**
+   * Otsu's Method.Utiliza el método de Otsu, que es un enfoque bien establecido y
+   ampliamente utilizado para determinar el umbral óptimo en imágenes
+   binarias.
+   *
+   * Calcula el limite para entre los pixeles blanco y negros.
+   * @return
+   */
+  public int calculeThreshold() {
+    // Get the histogram of pixel intensities
+    int[] histogram = new int[256];
+    for (int y = 0; y < getHeight(); y++) {
+      for (int x = 0; x < getWidth(); x++) {
+        int pixel = getArgb(x, y);
+        int intensity = Pixel.gray(pixel);
+        histogram[intensity]++;
+      }
+    }
+
+    // Calculate the total number of pixels
+    final int totalPixels = getWidth() * getHeight();
+
+    // Calculate the sum of intensities and sum of squared intensities
+    int sum = 0;
+    //int sumOfSquares = 0;
+    for (int i = 0; i < 256; i++) {
+      sum += i * histogram[i];
+      //sumOfSquares += i * i * histogram[i];
+    }
+
+    double maxVariance = 0.0;
+    byte threshold = 0;
+
+    int sumForeground = 0;
+    int sumBackground = 0;
+    int countForeground = 0;
+    int countBackground = 0;
+
+    // Iterate through intensities to find the optimal threshold
+    for (int i = 0; i < 256; i++) {
+      countBackground += histogram[i];
+      if (countBackground == 0) {
+        continue;
+      }
+
+      countForeground = totalPixels - countBackground;
+      if (countForeground == 0) {
+        break;
+      }
+
+      sumBackground += i * histogram[i];
+      sumForeground = sum - sumBackground;
+
+      final double meanBackground = (double) sumBackground / countBackground;
+      final double meanForeground = (double) sumForeground / countForeground;
+
+      // Calculate between-class variance
+      final double betweenVariance = countBackground * countForeground *
+        Math.pow(meanBackground - meanForeground, 2) / (totalPixels * totalPixels);
+
+      // Update if the variance is greater than the current maximum
+      if (betweenVariance > maxVariance) {
+        maxVariance = betweenVariance;
+        threshold = (byte) i;
+      }
+    }
+
+    return threshold;
+  }
+
   /**
    * transform RGB image in raster format.
+   * @param threshold 127
    * @return raster byte array
    */
-  public byte[] getRasterBytes() {
+  public byte[] getRasterBytes(int threshold) {
     final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
     int  Byte;
     int  bits;
 
-    final int width = this.getWidth();
-    final int height = this.getHeight();
-
-    for(int y = 0; y < height; y++){
+    for(int y = 0; y < this.getHeight(); y++){
       Byte = 0;
       bits = 0;
 
-      for(int x = 0; x < width; x++){
+      for(int x = 0; x < this.getWidth(); x++){
         // Obtenemos un blanco o un negro del pixel.
-        final int pixel = this.getPixel(x, y);
-        int zeroOrOne = Pixel.toBit(pixel, 127); // black or White
+        final int pixel = this.getArgb(x, y);
+        int zeroOrOne = Pixel.zeroOrOne(pixel, threshold); // black or White
 
         Byte = Byte | (zeroOrOne << (7 - bits));
         bits++;
@@ -76,32 +152,6 @@ public class PixelImage {
 
     }
     return byteArray.toByteArray();
-  }
-
-  /* Aplica un dither a la imagen */
-  public PixelImage newTransform(Transform transform) {
-    return transform.apply(this);
-  }
-
-  /* Aplica un filtro a la imagen. */
-  public void apply(Filter filter) {
-    final int width = getWidth();
-    final int height = getHeight();
-
-    for (int row = 0; row < height; row++) {
-      for (int col = 0; col < width; col++) {
-        int pixel = getPixel(col, row);
-
-        // Obtener el canal alfa (transparencia)
-        int alpha = Color.alpha(pixel);
-        // Si el píxel es transparente, establecerlo como blanco
-        if (alpha == 0) {
-          setPixel(col, row, Color.WHITE);
-        } else {
-          setPixel(col, row, filter.pixel(pixel));
-        }
-      }
-    }
   }
 
   public static int getResizedDimension(int maxPrimary, int maxSecondary, int actualPrimary,

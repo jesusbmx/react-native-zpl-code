@@ -1,7 +1,7 @@
 //
 //  Filter.swift
 //
-//  Created by jbmx on 23/12/22.
+//  Created by Jesus on 23/12/22.
 //
 
 import Foundation
@@ -9,7 +9,7 @@ import Foundation
 /*
   Filtro para PixelImage
  */
-protocol Filter
+public protocol Filter
 {
   func apply(argb: Int) -> Int
 }
@@ -24,7 +24,7 @@ protocol Filter
  -   0     0     0   black (a sort of gray)
  - 255   255   255   white (ditto)
 */
-class GrayScale: NSObject, Filter
+public class GrayScale: NSObject, Filter
 {
   public let r: Int
   public let g: Int
@@ -54,7 +54,7 @@ class GrayScale: NSObject, Filter
     
     // Si el píxel es transparente, establecerlo como blanco
     if (alpha == 0) {
-      return Pixel.white.toArgb()
+      return 0xffffffff // blanco
     }
 
     let rg = Int(Pixel.red(argb) * self.r);
@@ -91,7 +91,7 @@ public class Sepia: NSObject, Filter
     
     // Si el píxel es transparente, establecerlo como blanco
     if (a == 0) {
-      return Pixel.white.toArgb()
+      return 0xffffffff // blanco
     }
     
     var r = Pixel.red(argb)

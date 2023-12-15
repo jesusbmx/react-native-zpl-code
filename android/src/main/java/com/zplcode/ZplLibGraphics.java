@@ -9,11 +9,14 @@ import java.util.zip.DeflaterOutputStream;
 public class ZplLibGraphics {
 
   public final PixelImage pixels;
+
+  public final int threshold;
   protected Integer x;
   protected Integer y;
 
-  public ZplLibGraphics(PixelImage pixels) {
+  public ZplLibGraphics(PixelImage pixels, int threshold) {
     this.pixels = pixels;
+    this.threshold = threshold;
   }
 
   public void setPoint(Integer x, Integer y) {
@@ -100,7 +103,7 @@ public class ZplLibGraphics {
   public String getZplCode(boolean insideFormat) throws IOException {
     final int width = pixels.getWidth();
     final int height = pixels.getHeight();
-    final byte[] rasterBytes = pixels.getRasterBytes();
+    final byte[] rasterBytes = pixels.getRasterBytes(threshold);
 
     // LZ77 compression
     final byte[] deflate = deflate(rasterBytes);

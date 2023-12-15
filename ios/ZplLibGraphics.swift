@@ -11,10 +11,12 @@ class ZplLibGraphics
 {
   /* Imagen a convertir */
   private let pixels: PixelImage
+  private let threshold: UInt8
   
-  public init(pixels: PixelImage)
+  public init(pixels: PixelImage, threshold: UInt8)
   {
     self.pixels = pixels
+    self.threshold = threshold
   }
   
   /**
@@ -97,7 +99,7 @@ class ZplLibGraphics
     let width: Int = pixels.getWidth();
     let height: Int = pixels.getHeight();
     
-    var data: [UInt8] = pixels.getRasterBytes();
+    var data: [UInt8] = pixels.getRasterBytes(threshold: threshold);
     let bytesPerRow: Int = data.count / height;
     let binaryByteCount: Int = (width * height) / 8;
     

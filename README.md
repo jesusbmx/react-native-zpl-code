@@ -171,121 +171,151 @@ k86Dj3obY0ymFDi0XBsS1X8AR3bn+A==
 ```
 
 #### Zpl.Builder Class
+```js
 setup(props: {
-      size?: {
-        heightDots: number,
-        widthDots: number,
-      },
-      labelHome?: {
-        x: number, 
-        y: number
-      },
-      labelTop?: number,
-      labeShift?: number,
-      orientation?: PrintOrientationType,
-      media?: {
-        type: MediaTrackingType,
-        dots?: number
-      },
-    }): this
+  size?: {
+    heightDots: number,
+    widthDots: number,
+  },
+  labelHome?: {
+    x: number, 
+    y: number
+  },
+  labelTop?: number,
+  labeShift?: number,
+  orientation?: PrintOrientationType,
+  media?: {
+    type: MediaTrackingType,
+    dots?: number
+  },
+}): this
+```
 
     Configures label settings such as size, label home, orientation, media, etc.
 
+```js
 font(props: {
-      type: FontType;
-      w: number;
-      h: number;
-    }): this
+  type: FontType;
+  w: number;
+  h: number;
+}): this
+```
 
     Sets the font type, width, and height.
 
+```js
 point(props: {
-      x: number;
-      y: number;
-      justification?: JustificationType;
-    }): this
+  x: number;
+  y: number;
+  justification?: JustificationType;
+}): this
+```
 
     Sets the drawing origin for elements.
 
+```js
 text(props: {
-      x: number;
-      y: number;
-      font?: {
-        type: FontType;
-        h: number; 
-        w: number;
-      },
-      text: string;
-      justification?: JustificationType;
-    }): this
+  x: number;
+  y: number;
+  font?: {
+    type: FontType;
+    h: number; 
+    w: number;
+  },
+  text: string;
+  justification?: JustificationType;
+}): this
+```
 
     Adds text to the label.
 
+```js
 textBlock(props: {
-        x: number;
-        y: number;
-        font?: {
-          type: FontType;
-          h: number; 
-          w: number;
-        },
-        text: string;
-        width: number;
-        numLines: number;
-        textJustification?: AlignmentType; 
-      }): this
+  x: number;
+  y: number;
+  font?: {
+    type: FontType;
+    h: number; 
+    w: number;
+  },
+  text: string;
+  width: number;
+  numLines: number;
+  textJustification?: AlignmentType; 
+}): this
+```
 
     Adds text in block format to the label.
 
+```js
 barcode128(props: {
-      x: number;
-      y: number;
-      height: number;
-      barcodeTxt: BarcodeTxtType; 
-      rotation: RotationType;
-      width: number;
-      text: string;
-    }): this
+  x: number;
+  y: number;
+  height: number;
+  barcodeTxt: BarcodeTxtType; 
+  rotation: RotationType;
+  width: number;
+  text: string;
+}): this
+```
 
     Adds a Code 128 barcode to the label.
 
+```js
 qrcode(props: {
-      x: number;
-      y: number;
-      model?: QRCodeModelType; 
-      size: number;
-      errorLevel?: QRErrorCorrectionLevelType; 
-      text: string;
-      characterMode?: string;
-    }): this
+  x: number;
+  y: number;
+  model?: QRCodeModelType; 
+  size: number;
+  errorLevel?: QRErrorCorrectionLevelType; 
+  text: string;
+  characterMode?: string;
+}): this
+```
 
     Adds a QR code to the label.
 
+```js
 rectangle(props: {
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-      line: number;
-    }): this
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  line: number;
+}): this
+```
 
     Draws a rectangle on the label.
 
+```js
 bar(props: {
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-      line: number;
-    }): this
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  line: number;
+}): this
+```
 
     Adds a horizontal line or bar to the label.
 
-image(props: ImageProps): this
+```js
+image(props: {
+  uri?: string 
+  base64?: string,
+  x?: number
+  y?: number
+  width: number
+  height?: number
+  dither?: boolean
+}): this
+```
 
     Adds an image to the label.
 
+```js
 build(prefixAndSufix = true): Promise<string>
+```
 
     Generates the ZPL code for the label.
 

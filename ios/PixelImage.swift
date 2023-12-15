@@ -1,14 +1,14 @@
 //
 //  PixelImage.swift
 //
-//  Created by jbmx on 23/11/22.
+//  Created by Jesus on 23/11/22.
 //
 
 import Foundation
 import UIKit
 import Accelerate
 
-class PixelImage: NSObject
+public class PixelImage: NSObject
 {
   public static let bitsPerComponent = 8
   public static let bytesPerPixel = 4
@@ -144,6 +144,87 @@ class PixelImage: NSObject
       setArgb(x: x, y: y, newValue)
     }
   }
+    
+  /**
+   * Aplica un filtro a la imagen.
+   */
+  public func apply(filter: Filter) {
+    Utils.log("[PixelImage]", "apply -> filter:\(filter)")
+    let width = self.width
+    let height = self.height
+
+    for row in 0..<height {
+      for col in 0..<width {
+        let pixel = self.getArgb(x: col, y: row)
+        self.setArgb(x: col, y: row, filter.apply(argb: pixel))
+      }
+    }
+  }
+  
+  /**
+   * Aplica un dither a la imagen
+   */
+  public func apply(transform: Transform) {
+    Utils.log("[PixelImage]", "apply -> transform:\(transform)")
+    self.pixelData = transform.apply(self).pixelData
+  }
+  
+  public func getCGImage() -> CGImage? {
+    return self.cgImage
+  }
+
+  /**
+   * Escala la imagen
+   */
+  public func newScale(
+    width: Int,
+    height: Int,
+    interpolationQuality: CGInterpolationQuality = .medium //.high
+  ) throws -> PixelImage {
+    Utils.log("[PixelImage]", "newScale -> width:\(width) height:\(height)")
+
+    let scale = UIScreen.main.scale  // Puedes ajustar esto según tus necesidades
+    let newSize = CGSize(
+      width: CGFloat(width) / scale,
+      height: CGFloat(height) / scale)
+
+    UIGraphicsBeginImageContextWithOptions(newSize, false, scale)
+    defer { UIGraphicsEndImageContext() }
+
+    guard let context = UIGraphicsGetCurrentContext() else {
+      fatalError("Invalid Context")
+    }
+    
+    // Apply a horizontal flip transformation to correct the mirroring issue
+    context.scaleBy(x: -1.0, y: 1.0)
+    context.translateBy(x: -newSize.width, y: 0.0)
+
+    context.interpolationQuality = interpolationQuality
+
+    guard let cgImage = self.getCGImage() else {
+      fatalError("Invalid CG Image")
+    }
+    
+    context.draw(cgImage, in: CGRect(origin: .zero, size: newSize))
+
+    guard let scaledImage = UIGraphicsGetImageFromCurrentImageContext() else {
+      fatalError("Invalid Image")
+    }
+
+    return try PixelImage(uiImage: scaledImage)
+  }
+  
+  /**
+   * Obtiene la cantidad de bytes necesarios para almacenar los datos
+   * ráster de la imagen en un formato donde cada byte representa
+   * 8 píxeles horizontalmente.
+   * @return
+   */
+  public func getHorizontalBytesOfRaster() -> Int {
+      return ((self.getWidth() % 8) > 0)
+              ? (self.getWidth() / 8) + 1
+              : (self.getWidth() / 8);
+  }
   
   /**
    * Otsu's Method.
@@ -154,19 +235,7 @@ class PixelImage: NSObject
    *
    * Calcula el limite para entre los pixeles blanco y negros.
    */
-  public func threshold() -> UInt8 {
-    /*let totalPixels = self.width * self.height
-    var totalGray: Int = 0
-
-    for y in 0..<self.height {
-      for x in 0..<self.width {
-        let pixel: Int = self.getArgb(x: x, y: y)
-        totalGray += Int(Pixel.gray(pixel) * 255)
-      }
-    }
-
-    return UInt8(totalGray / totalPixels)*/
-
+  public func calculeThreshold() -> UInt8 {
     // Get the histogram of pixel intensities
     var histogram = [Int](repeating: 0, count: 256)
     for y in 0..<getHeight() {
@@ -182,10 +251,10 @@ class PixelImage: NSObject
 
     // Calculate the sum of intensities and sum of squared intensities
     var sum = 0
-    var sumOfSquares = 0
+    //var sumOfSquares = 0
     for i in 0..<256 {
       sum += i * histogram[i]
-      sumOfSquares += i * i * histogram[i]
+      //sumOfSquares += i * i * histogram[i]
     }
 
     var maxVariance = 0.0
@@ -227,88 +296,17 @@ class PixelImage: NSObject
 
     return threshold
   }
-    
-  /**
-   * Aplica un filtro a la imagen.
-   */
-  public func apply(filter: Filter) {
-    Utils.log("[PixelImage]", "apply -> filter:\(filter)")
-    let width = self.width
-    let height = self.height
-
-    for row in 0..<height {
-      for col in 0..<width {
-        let pixel = self.getArgb(x: col, y: row)
-        self.setArgb(x: col, y: row, filter.apply(argb: pixel))
-      }
-    }
-  }
-  
-  /**
-   * Aplica un dither a la imagen
-   */
-  public func apply(transform: Transform) {
-    Utils.log("[PixelImage]", "apply -> transform:\(transform)")
-    self.pixelData = transform.apply(self).pixelData
-  }
-  
-  public func getCGImage() -> CGImage? {
-    return self.cgImage
-  }
-
-  /**
-   * Escala la imagen
-   */
-  public func newScale(width: Int, height: Int) throws -> PixelImage {
-    Utils.log("[PixelImage]", "newScale -> width:\(width) height:\(height)")
-
-    let scale = UIScreen.main.scale  // Puedes ajustar esto según tus necesidades
-    let newSize = CGSize(width: CGFloat(width) / scale, height: CGFloat(height) / scale)
-
-    UIGraphicsBeginImageContextWithOptions(newSize, false, scale)
-    defer { UIGraphicsEndImageContext() }
-
-    guard let context = UIGraphicsGetCurrentContext() else {
-      fatalError("Invalid Context")
-    }
-
-    context.interpolationQuality = .high
-
-    guard let cgImage = self.getCGImage() else {
-      fatalError("Invalid CG Image")
-    }
-    
-    context.draw(cgImage, in: CGRect(origin: .zero, size: newSize))
-
-    guard let scaledImage = UIGraphicsGetImageFromCurrentImageContext() else {
-      fatalError("Invalid Image")
-    }
-
-    return try PixelImage(uiImage: scaledImage)
-  }
-  
-  /**
-   * Obtiene la cantidad de bytes necesarios para almacenar los datos
-   * ráster de la imagen en un formato donde cada byte representa
-   * 8 píxeles horizontalmente.
-   * @return
-   */
-  public func getHorizontalBytesOfRaster() -> Int {
-      return ((self.getWidth() % 8) > 0)
-              ? (self.getWidth() / 8) + 1
-              : (self.getWidth() / 8);
-  }
   
   /**
    * transform RGB image in raster format.
    * @return raster byte array
    */
-  public func getRasterBytes() -> [UInt8] {
+  public func getRasterBytes(threshold: UInt8) -> [UInt8] {
     var byteArray = [UInt8]()
     var Byte: UInt8;
     var bits: Int;
 
-    //let threshold = self.threshold()
+    Utils.log("[PixelImage]", "getRasterBytes", "threshold=\(threshold)") // 129
       
     for y in 0 ..< getHeight() {
         Byte = 0;
@@ -317,7 +315,8 @@ class PixelImage: NSObject
       for x in 0 ..< getWidth() {
         // Obtenemos un blanco o un negro del pixel.
         let pixel = self.getArgb(x: x, y: y);
-        let zeroOrOne: UInt8 = Pixel.zeroOrOne(argb: pixel); // black or White
+        let zeroOrOne: UInt8 = Pixel.zeroOrOne(
+          argb: pixel, threshold: threshold); // black or White
         
         Byte = Byte | (zeroOrOne << (7 - bits));
         bits = bits + 1;

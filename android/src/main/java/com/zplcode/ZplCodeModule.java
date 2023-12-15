@@ -49,46 +49,43 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
     try {
       // Obtener propiedades de la ReadableMap
       final Bitmap bitmap = getBitmapFromProps(getReactApplicationContext(), props);
-      Integer xOffset = props.hasKey("x") ? props.getInt("x") : null;
-      Integer yOffset = props.hasKey("y") ? props.getInt("y") : null;
-      int width = props.getInt("width");
-      int height = props.getInt("height");
-      boolean center = props.hasKey("center") && props.getBoolean("center");
-      boolean dither = props.hasKey("dither") && props.getBoolean("dither");
+      final PixelImage image = new PixelImage(bitmap);
 
-      PixelImage image = new PixelImage(bitmap);
+      //Extrae las propiedades de ancho y alto, con valores predeterminados basados en las dimensiones de la imagen.
+      final int maxWidth = props.hasKey("width")
+        ? props.getInt("width")
+        : image.getWidth();
 
-      int maxWidth   = width   <= 0 ?  image.getWidth()  : width;
-      int maxHeight  = height  <= 0 ?  image.getHeight() : height;
+      final int maxHeight = props.hasKey("height")
+        ? props.getInt("height")
+        : (image.getHeight() * maxWidth) / image.getWidth();
 
-      int desiredWidth = maxWidth;
-      int desiredHeight = maxHeight;
+      final int actualWidth = image.getWidth();
+      final int actualHeight = image.getHeight();
 
       // Resize
-      int actualWidth = image.getWidth();
-      int actualHeight = image.getHeight();
-
       // Then compute the dimensions we would ideally like to decode to.
-      desiredWidth = PixelImage.getResizedDimension(maxWidth, maxHeight, actualWidth, actualHeight);
+      final int desiredWidth = PixelImage.getResizedDimension(maxWidth, maxHeight, actualWidth, actualHeight);
 
-      desiredHeight = PixelImage.getResizedDimension(maxHeight, maxWidth, actualHeight, actualWidth);
-
-
-      if (center) {
-        xOffset = (maxWidth - desiredWidth) / 2;
-        yOffset = (maxHeight - desiredHeight) / 2;
-      }
+      final int desiredHeight = PixelImage.getResizedDimension(maxHeight, maxWidth, actualHeight, actualWidth);
 
       PixelImage newImage = image.newScale(desiredWidth, desiredHeight);
-      newImage.apply(GrayScale.DARK_GRAY);
+      final int threshold = newImage.calculeThreshold();
 
-      if (dither) {
-        newImage = newImage.newTransform(new Dither());
+      final boolean isDither = props.hasKey("dither") && props.getBoolean("dither");
+      if (isDither) {
+        newImage = newImage.newTransform(new FloydSteinbergDithering());
       }
 
-      final ZplLibGraphics graphics = new ZplLibGraphics(newImage);
+      final ZplLibGraphics graphics = new ZplLibGraphics(newImage, threshold);
+
+      // Calculate offsets
+      final int xOffset = props.hasKey("x") ? props.getInt("x") : (maxWidth - desiredWidth) / 2;
+      final int yOffset = props.hasKey("y") ? props.getInt("y") : (maxHeight - desiredHeight) / 2;
+
       graphics.setPoint(xOffset, yOffset);
-      String zpl = graphics.getZplCode(true);
+
+      final String zpl = graphics.getZplCode(true);
 
       promise.resolve(zpl);
 

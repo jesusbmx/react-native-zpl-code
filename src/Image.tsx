@@ -28,8 +28,7 @@ export interface ImageProps {
   x?: number
   y?: number
   width: number
-  height: number
-  center?: boolean
+  height?: number
   dither?: boolean
 }
 

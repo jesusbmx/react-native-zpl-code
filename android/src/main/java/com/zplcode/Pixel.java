@@ -1,16 +1,6 @@
 package com.zplcode;
 
 public class Pixel {
-  public static final Pixel[] palette = new Pixel[] {
-    new Pixel(  0,   0,   0), // black
-    new Pixel(  0,   0, 255), // green
-    new Pixel(  0, 255,   0), // blue
-    new Pixel(  0, 255, 255), // cyan
-    new Pixel(255,   0,   0), // red
-    new Pixel(255,   0, 255), // purple
-    new Pixel(255, 255,   0), // yellow
-    new Pixel(255, 255, 255)  // white
-  };
 
   int r, g, b, a;
 
@@ -30,67 +20,6 @@ public class Pixel {
 
   public Pixel(int r, int g, int b) {
     this(r, g, b, 255);
-  }
-
-  public Pixel add(Pixel o) {
-    return new Pixel(
-      r + o.r,
-      g + o.g,
-      b + o.b,
-      a + o.a
-    );
-  }
-
-  public int clamp(int c) {
-    return Math.max(0, Math.min(255, c));
-  }
-
-  public int diff(Pixel o) {
-    int Rdiff = o.r - r;
-    int Gdiff = o.g - g;
-    int Bdiff = o.b - b;
-    int Adiff = o.a - a;
-    int distanceSquared = Rdiff * Rdiff + Gdiff * Gdiff + Bdiff * Bdiff + Adiff * Adiff;
-    return distanceSquared;
-  }
-
-  public Pixel mul(double d) {
-    return new Pixel(
-      (int) (d * r),
-      (int) (d * g),
-      (int) (d * b),
-      (int) (d * a)
-    );
-  }
-
-  public Pixel sub(Pixel o) {
-    return new Pixel(
-      r - o.r,
-      g - o.g,
-      b - o.b,
-      a - o.a
-    );
-  }
-
-  public int toRGB() {
-    int alpha = clamp(a);
-    int red = clamp(r);
-    int green = clamp(g);
-    int blue = clamp(b);
-    return toRGB(red, green, blue, alpha);
-  }
-
-
-  public static Pixel findClosestPaletteColor(Pixel c, Pixel[] palette) {
-    Pixel closest = palette[0];
-
-    for (Pixel n : palette) {
-      if (n.diff(c) < closest.diff(c)) {
-        closest = n;
-      }
-    }
-
-    return closest;
   }
 
   public static int alpha(int argb) {
@@ -117,17 +46,28 @@ public class Pixel {
   }
 
   /**
-   * Conviert un pixel rgb a un gray
-   * @param argb
-   * @return
+   * Método de luminosidad.
+   * Calcula la intensidad de gris de un píxel basándose en sus componentes RGB y alfa
+   * @param argb pixel
+   * @return rango de 0 a 255
    */
   public static int gray(int argb) {
-    //int alpha = (argb >> 24) & 0xFF;
-    final int red = (argb >> 16) & 0xFF;
-    final int green = (argb >> 8) & 0xFF;
-    final int blue = (argb) & 0xFF;
-    return red + green + blue / 3;
-    //return (int) (0.2989 * red + 0.5870 * green + 0.1140 * blue);
+    int red = red(argb);
+    int green = green(argb);
+    int blue = blue(argb);
+    int alpha = alpha(argb);
+
+    // Si el canal alfa es bajo, se considera blanco
+    boolean isTransparent = alpha < 128;
+
+    if (isTransparent) {
+      return 255;
+
+    } else {
+      int result = (int) (0.2989 * red + 0.5870 * green + 0.1140 * blue);
+
+      return clamp(result);
+    }
   }
 
   /**
@@ -138,34 +78,24 @@ public class Pixel {
    * @param threshold 127
    * @return Blanco(1) or Negro(0)
    */
-  public static int toBit(int argb, int threshold) {
+  public static int zeroOrOne(int argb, int threshold) {
     final int gray = Pixel.gray(argb);
-    return (gray < threshold) ? 1 : 0;
+    // Negro(1) o blanco(0)
+    return (gray <= threshold) ? 1 : 0;
   }
 
-  /**
-   * zeroOrOne
-   *
-   * Convierte un rgb a un binario blanco o negro.
-   * @param argb
-   * @param threshold 127
-   * @return Blanco(1) or Negro(0)
-   */
-  public static char toBitChar(int argb, int threshold) {
-    final int gray = Pixel.gray(argb);
-    return (gray < threshold) ? '1' : '0';
+  public static int clamp(int c) {
+    return Math.max(0, Math.min(255, c));
   }
 
-  /**
-   * zeroOrOne
-   *
-   * Convierte el pixel de la imagen a blanco o negro
-   * @param argb
-   * @return Blanco(1) or Negro(0)
-   */
-  public static char toBitChar(int argb) {
-    return toBitChar(argb, 127);
+  public int toRGB() {
+    int alpha = clamp(a);
+    int red = clamp(r);
+    int green = clamp(g);
+    int blue = clamp(b);
+    return toRGB(red, green, blue, alpha);
   }
+
 
 //    public static boolean shouldPrintColor(int pixel) {
 //      final int a = (pixel >> 24) & 0xFF;
