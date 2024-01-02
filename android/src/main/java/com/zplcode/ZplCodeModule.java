@@ -63,21 +63,23 @@ public class ZplCodeModule extends ReactContextBaseJavaModule {
       final int actualWidth = image.getWidth();
       final int actualHeight = image.getHeight();
 
-      // Resize
+      // # Resize
       // Then compute the dimensions we would ideally like to decode to.
       final int desiredWidth = PixelImage.getResizedDimension(maxWidth, maxHeight, actualWidth, actualHeight);
 
       final int desiredHeight = PixelImage.getResizedDimension(maxHeight, maxWidth, actualHeight, actualWidth);
 
       PixelImage newImage = image.newScale(desiredWidth, desiredHeight);
-      final int threshold = newImage.calculeThreshold();
 
+      // # Filter
       final boolean isDither = props.hasKey("dither") && props.getBoolean("dither");
       if (isDither) {
+        newImage.apply(GrayScale.DEFAULT);
         newImage = newImage.newTransform(new FloydSteinbergDithering());
       }
 
-      final ZplLibGraphics graphics = new ZplLibGraphics(newImage, threshold);
+      // # Zpl
+      final ZplLibGraphics graphics = new ZplLibGraphics(newImage, 127);
 
       // Calculate offsets
       final int xOffset = props.hasKey("x") ? props.getInt("x") : (maxWidth - desiredWidth) / 2;

@@ -47,6 +47,19 @@ public class PixelImage {
     return transform.apply(this);
   }
 
+  /* Aplica un filtro a la imagen. */
+  public void apply(Filter filter) {
+    final int width = getWidth();
+    final int height = getHeight();
+
+    for (int row = 0; row < height; row++) {
+      for (int col = 0; col < width; col++) {
+        int pixel = getArgb(col, row);
+        setArgb(col, row, filter.pixel(pixel));
+      }
+    }
+  }
+
   /**
    * Otsu's Method.Utiliza el método de Otsu, que es un enfoque bien establecido y
    ampliamente utilizado para determinar el umbral óptimo en imágenes
