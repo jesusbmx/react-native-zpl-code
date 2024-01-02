@@ -29,8 +29,6 @@ class ZplCode: NSObject {
 
       let newImage = try image.newScale(width: desiredWidth, height: desiredHeight, interpolationQuality: .medium)
       
-      let threshold = newImage.calculeThreshold()
-
       let isDither = props["dither"] as? Bool ?? true
             
       if (isDither) {
@@ -38,7 +36,7 @@ class ZplCode: NSObject {
         newImage.apply(transform: FloydSteinbergDithering())
       }
 
-      let graphics = ZplLibGraphics(pixels: newImage, threshold: threshold)
+      let graphics = ZplLibGraphics(pixels: newImage, threshold: 127)
 
       // Calculate offsets
       let xOffset: Int = props["x"] as? Int ?? (maxWidth - desiredWidth) / 2
