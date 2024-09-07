@@ -180,11 +180,11 @@ Example of Wi-Fi transmission:
 ```js
 import TcpSocket from 'react-native-tcp-socket';
 
-const printZplToNetPrinter = (zpl) => {
+const printZplToNetPrinter = (zpl, ip = "192.168.1.100") => {
   // Printer configuration
   const options = {
     port: 9100, // Typical port for Zebra printers
-    host: '192.168.1.100', // Change this IP to your printer's IP address
+    host: ip, // Change this IP to your printer's IP address
   };
 
   // Create a connection to the printer
