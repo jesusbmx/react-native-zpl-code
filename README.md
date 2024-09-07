@@ -170,6 +170,77 @@ k86Dj3obY0ymFDi0XBsS1X8AR3bn+A==
 ^XZ
 ```
 
+## Connections
+
+#### Network (Wi-Fi) Connection
+
+To send the ZPL command over a network, you can connect to the Zebra printer using its IP address. You can use the JavaScript fetch API to send the data.
+
+Example of Wi-Fi transmission:
+```js
+import TcpSocket from 'react-native-tcp-socket';
+
+const printZplToNetPrinter = (zpl) => {
+  // Printer configuration
+  const options = {
+    port: 9100, // Typical port for Zebra printers
+    host: '192.168.1.100', // Change this IP to your printer's IP address
+  };
+
+  // Create a connection to the printer
+  const client = TcpSocket.createConnection(options, () => {
+    console.log('Connected to the printer');
+    
+    // Send the ZPL to the printer
+    client.write(zpl);
+    client.end(); // Close the connection after sending
+  });
+
+  // Handle errors
+  client.on('error', (error) => {
+    console.log('Error:', error);
+  });
+
+  // Handle connection close
+  client.on('close', () => {
+    console.log('Connection closed');
+  });
+};
+```
+
+#### Bluetooth Connection
+
+To send the ZPL command via Bluetooth, make sure you have access to the Zebra printer through an active Bluetooth connection. You can use libraries like `react-native-ble-plx` to handle Bluetooth connections in React Native.
+
+Example of Bluetooth transmission:
+```js
+import BluetoothSerial from 'react-native-bluetooth-serial';
+
+const printZplToBluetoothPrinter = async (zpl, printerAddress) => {
+  try {
+    // Enable Bluetooth if it's disabled
+    const isEnabled = await BluetoothSerial.isEnabled();
+    if (!isEnabled) {
+      await BluetoothSerial.enable();
+    }
+
+    // Connect to the Bluetooth printer using its MAC address
+    await BluetoothSerial.connect(printerAddress);
+    console.log('Connected to printer');
+
+    // Send the ZPL command to the printer
+    await BluetoothSerial.write(zpl);
+    console.log('ZPL command sent to the printer');
+
+    // Disconnect from the printer after sending the command
+    await BluetoothSerial.disconnect();
+    console.log('Disconnected from printer');
+  } catch (error) {
+    console.log('Error:', error);
+  }
+};
+```
+
 #### Zpl.Builder Class
 ```js
 setup(props: {
